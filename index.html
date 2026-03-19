@@ -2,27 +2,19 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>スマブラ風バトル</title>
+<title>スマブラ風バトル 完全版</title>
 <style>
-body {
-  margin: 0;
-  background: #111;
-  color: #fff;
-  font-family: sans-serif;
-  text-align: center;
-}
-canvas {
-  background: #222;
-  display: block;
-  margin: 20px auto;
-  border: 2px solid #fff;
-}
+body { margin:0; background:#111; color:#fff; text-align:center; }
+canvas { background:#222; display:block; margin:20px auto; border:2px solid #fff; }
 </style>
 </head>
 <body>
-<h1>スマブラ風バトルゲーム</h1>
-<p>操作: ←→移動 / ↑ジャンプ / Z攻撃</p>
-<canvas id="game" width="600" height="300"></canvas>
+<h1>スマブラ風バトル（進化版）</h1>
+<p>
+P1: ←→移動 ↑ジャンプ Z攻撃 X必殺<br>
+P2: A/D移動 Wジャンプ F攻撃 G必殺
+</p>
+<canvas id="game" width="700" height="350"></canvas>
 
 <script>
 const canvas = document.getElementById("game");
@@ -31,7 +23,7 @@ const ctx = canvas.getContext("2d");
 const gravity = 0.5;
 
 class Fighter {
-  constructor(x, color) {
+  constructor(x, color, controls) {
     this.x = x;
     this.y = 200;
     this.vx = 0;
@@ -39,8 +31,11 @@ class Fighter {
     this.width = 30;
     this.height = 30;
     this.color = color;
-    this.hp = 0; // ダメージ％
-    this.onGround = false;
+    this.hp = 0;
+    this.stock = 3;
+    this.jumpCount = 0;
+    this.maxJump = 2;
+    this.controls = controls;
   }
 
   draw() {
@@ -48,99 +43,52 @@ class Fighter {
     ctx.fillRect(this.x, this.y, this.width, this.height);
   }
 
-  update() {
+  update(platforms) {
     this.vy += gravity;
     this.x += this.vx;
     this.y += this.vy;
 
-    if (this.y + this.height > 250) {
-      this.y = 250 - this.height;
-      this.vy = 0;
-      this.onGround = true;
-    } else {
-      this.onGround = false;
-    }
+    let onGround = false;
 
-    // 画面外落下
+    platforms.forEach(p => {
+      if (this.x < p.x + p.w &&
+          this.x + this.width > p.x &&
+          this.y + this.height < p.y + 10 &&
+          this.y + this.height + this.vy >= p.y) {
+        this.y = p.y - this.height;
+        this.vy = 0;
+        onGround = true;
+        this.jumpCount = 0;
+      }
+    });
+
     if (this.y > canvas.height) {
-      this.hp = 0;
-      this.x = Math.random() * 500;
-      this.y = 0;
+      this.respawn();
     }
+  }
+
+  respawn() {
+    this.stock--;
+    this.hp = 0;
+    this.x = Math.random() * 600;
+    this.y = 0;
+    this.vx = this.vy = 0;
   }
 }
 
-const player = new Fighter(100, "cyan");
-const enemy = new Fighter(400, "red");
+const player1 = new Fighter(100, "cyan", {
+  left: "ArrowLeft", right: "ArrowRight", jump: "ArrowUp", attack: "z", special: "x"
+});
+
+const player2 = new Fighter(500, "red", {
+  left: "a", right: "d", jump: "w", attack: "f", special: "g"
+});
 
 const keys = {};
-
 document.addEventListener("keydown", e => keys[e.key] = true);
 document.addEventListener("keyup", e => keys[e.key] = false);
 
-function attack(attacker, target) {
-  const dist = Math.abs(attacker.x - target.x);
-  if (dist < 40 && Math.abs(attacker.y - target.y) < 40) {
-    target.hp += 10;
-    target.vx = (target.x < attacker.x ? -1 : 1) * (2 + target.hp / 20);
-    target.vy = -5;
-  }
-}
-
-function controlPlayer() {
-  player.vx = 0;
-
-  if (keys["ArrowLeft"]) player.vx = -3;
-  if (keys["ArrowRight"]) player.vx = 3;
-
-  if (keys["ArrowUp"] && player.onGround) {
-    player.vy = -10;
-  }
-
-  if (keys["z"] || keys["Z"]) {
-    attack(player, enemy);
-  }
-}
-
-function controlEnemy() {
-  // 簡単なAI
-  if (enemy.x < player.x) enemy.vx = 1.5;
-  else enemy.vx = -1.5;
-
-  if (Math.random() < 0.02 && enemy.onGround) {
-    enemy.vy = -10;
-  }
-
-  if (Math.random() < 0.05) {
-    attack(enemy, player);
-  }
-}
-
-function drawUI() {
-  ctx.fillStyle = "white";
-  ctx.fillText("PLAYER: " + player.hp + "%", 20, 20);
-  ctx.fillText("ENEMY: " + enemy.hp + "%", 450, 20);
-}
-
-function gameLoop() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  controlPlayer();
-  controlEnemy();
-
-  player.update();
-  enemy.update();
-
-  player.draw();
-  enemy.draw();
-
-  drawUI();
-
-  requestAnimationFrame(gameLoop);
-}
-
-gameLoop();
-</script>
-</body>
-</html>
-
+const platforms = [
+  {x:0,y:300,w:700,h:20},
+  {x:200,y:220,w:120,h:10},
+  {x:
