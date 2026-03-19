@@ -2,66 +2,145 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>錦織渉の冒険</title>
+<title>スマブラ風バトル</title>
 <style>
 body {
-  font-family: sans-serif;
+  margin: 0;
   background: #111;
   color: #fff;
+  font-family: sans-serif;
   text-align: center;
 }
-#game {
-  margin-top: 20px;
-}
-button {
-  padding: 10px;
-  margin: 5px;
-}
-.log {
-  height: 150px;
-  overflow-y: auto;
+canvas {
   background: #222;
-  padding: 10px;
-  margin-top: 10px;
+  display: block;
+  margin: 20px auto;
+  border: 2px solid #fff;
 }
 </style>
 </head>
 <body>
-<h1>錦織渉の冒険</h1>
-<div id="game">
-  <p id="status"></p>
-  <button onclick="explore()">探索する</button>
-  <button onclick="fightBoss()">ボスに挑む</button>
-  <div class="log" id="log"></div>
-</div>
+<h1>スマブラ風バトルゲーム</h1>
+<p>操作: ←→移動 / ↑ジャンプ / Z攻撃</p>
+<canvas id="game" width="600" height="300"></canvas>
 
 <script>
-let player = {
-  name: "錦織渉",
-  hp: 100,
-  attack: 10,
-  party: []
-};
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-let boss = {
-  name: "魔王",
-  hp: 150,
-  attack: 12
-};
+const gravity = 0.5;
 
-function log(msg) {
-  const logDiv = document.getElementById("log");
-  logDiv.innerHTML += msg + "<br>";
-  logDiv.scrollTop = logDiv.scrollHeight;
+class Fighter {
+  constructor(x, color) {
+    this.x = x;
+    this.y = 200;
+    this.vx = 0;
+    this.vy = 0;
+    this.width = 30;
+    this.height = 30;
+    this.color = color;
+    this.hp = 0; // ダメージ％
+    this.onGround = false;
+  }
+
+  draw() {
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+  }
+
+  update() {
+    this.vy += gravity;
+    this.x += this.vx;
+    this.y += this.vy;
+
+    if (this.y + this.height > 250) {
+      this.y = 250 - this.height;
+      this.vy = 0;
+      this.onGround = true;
+    } else {
+      this.onGround = false;
+    }
+
+    // 画面外落下
+    if (this.y > canvas.height) {
+      this.hp = 0;
+      this.x = Math.random() * 500;
+      this.y = 0;
+    }
+  }
 }
 
-function updateStatus() {
-  document.getElementById("status").innerText =
-    `${player.name} HP:${player.hp} 仲間:${player.party.length}`;
+const player = new Fighter(100, "cyan");
+const enemy = new Fighter(400, "red");
+
+const keys = {};
+
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+function attack(attacker, target) {
+  const dist = Math.abs(attacker.x - target.x);
+  if (dist < 40 && Math.abs(attacker.y - target.y) < 40) {
+    target.hp += 10;
+    target.vx = (target.x < attacker.x ? -1 : 1) * (2 + target.hp / 20);
+    target.vy = -5;
+  }
 }
 
-function explore() {
-  let rand = Math.random();
-  if (rand < 0.5) {
-    let friend = {
-      name: "仲間" + (player.party.length + 1),
+function controlPlayer() {
+  player.vx = 0;
+
+  if (keys["ArrowLeft"]) player.vx = -3;
+  if (keys["ArrowRight"]) player.vx = 3;
+
+  if (keys["ArrowUp"] && player.onGround) {
+    player.vy = -10;
+  }
+
+  if (keys["z"] || keys["Z"]) {
+    attack(player, enemy);
+  }
+}
+
+function controlEnemy() {
+  // 簡単なAI
+  if (enemy.x < player.x) enemy.vx = 1.5;
+  else enemy.vx = -1.5;
+
+  if (Math.random() < 0.02 && enemy.onGround) {
+    enemy.vy = -10;
+  }
+
+  if (Math.random() < 0.05) {
+    attack(enemy, player);
+  }
+}
+
+function drawUI() {
+  ctx.fillStyle = "white";
+  ctx.fillText("PLAYER: " + player.hp + "%", 20, 20);
+  ctx.fillText("ENEMY: " + enemy.hp + "%", 450, 20);
+}
+
+function gameLoop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  controlPlayer();
+  controlEnemy();
+
+  player.update();
+  enemy.update();
+
+  player.draw();
+  enemy.draw();
+
+  drawUI();
+
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body>
+</html>
+
