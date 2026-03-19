@@ -1,1 +1,67 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>錦織渉の冒険</title>
+<style>
+body {
+  font-family: sans-serif;
+  background: #111;
+  color: #fff;
+  text-align: center;
+}
+#game {
+  margin-top: 20px;
+}
+button {
+  padding: 10px;
+  margin: 5px;
+}
+.log {
+  height: 150px;
+  overflow-y: auto;
+  background: #222;
+  padding: 10px;
+  margin-top: 10px;
+}
+</style>
+</head>
+<body>
+<h1>錦織渉の冒険</h1>
+<div id="game">
+  <p id="status"></p>
+  <button onclick="explore()">探索する</button>
+  <button onclick="fightBoss()">ボスに挑む</button>
+  <div class="log" id="log"></div>
+</div>
 
+<script>
+let player = {
+  name: "錦織渉",
+  hp: 100,
+  attack: 10,
+  party: []
+};
+
+let boss = {
+  name: "魔王",
+  hp: 150,
+  attack: 12
+};
+
+function log(msg) {
+  const logDiv = document.getElementById("log");
+  logDiv.innerHTML += msg + "<br>";
+  logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+function updateStatus() {
+  document.getElementById("status").innerText =
+    `${player.name} HP:${player.hp} 仲間:${player.party.length}`;
+}
+
+function explore() {
+  let rand = Math.random();
+  if (rand < 0.5) {
+    let friend = {
+      name: "仲間" + (player.party.length + 1),
